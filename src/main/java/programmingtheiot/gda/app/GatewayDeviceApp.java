@@ -1,4 +1,4 @@
-/**
+	/**
  * This class is part of the Programming the Internet of Things
  * project, and is available via the MIT License, which can be
  * found in the LICENSE file at the top level of this repository.
@@ -10,6 +10,8 @@
  */ 
 
 package programmingtheiot.gda.app;
+
+import programmingtheiot.gda.system.SystemPerformanceManager;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,7 +30,7 @@ public class GatewayDeviceApp
 	public static final long DEFAULT_TEST_RUNTIME = 60000L;
 	
 	// private var's
-	
+	private SystemPerformanceManager sysPerfMgr = null;
 	
 	// constructors
 	
@@ -43,7 +45,7 @@ public class GatewayDeviceApp
 		
 		_Logger.info("Initializing GDA...");
 		
-		parseArgs(args);
+		this.sysPerfMgr = new SystemPerformanceManager();
 	}
 	
 	
@@ -82,8 +84,9 @@ public class GatewayDeviceApp
 		
 		try {
 			// TODO: Your code here
+		      this.sysPerfMgr.startManager();
+           	      _Logger.info("GDA started successfully.");
 			
-			_Logger.info("GDA started successfully.");
 		} catch (Exception e) {
 			_Logger.log(Level.SEVERE, "Failed to start GDA. Exiting.", e);
 			
@@ -102,13 +105,14 @@ public class GatewayDeviceApp
 		
 		try {
 			// TODO: Your code here
-			
-			_Logger.log(Level.INFO, "GDA stopped successfully with exit code {0}.", code);
+			this.sysPerfMgr.stopManager();
+		        _Logger.log(Level.INFO, "GDA stopped successfully with exit code {0}.", code);
+
 		} catch (Exception e) {
 			_Logger.log(Level.SEVERE, "Failed to cleanly stop GDA. Exiting.", e);
 		}
 		
-		System.exit(code);
+		//System.exit(code);
 	}
 	
 	
