@@ -22,44 +22,48 @@ public class SystemPerformanceData extends BaseIotData implements Serializable
 	
 	
 	// private var's
-	
+	private float cpuUtil = ConfigConst.DEFAULT_VAL;
+    private float diskUtil = ConfigConst.DEFAULT_VAL;
+    private float memUtil = ConfigConst.DEFAULT_VAL;
     
 	// constructors
 	
 	public SystemPerformanceData()
 	{
 		super();
+		super.setName(ConfigConst.SYS_PERF_DATA);
 	}
 	
 	
 	// public methods
 	
-	public float getCpuUtilization()
-	{
-		return 0.0f;
-	}
 	
-	public float getDiskUtilization()
-	{
-		return 0.0f;
-	}
-	
-	public float getMemoryUtilization()
-	{
-		return 0.0f;
-	}
-	
-	public void setCpuUtilization(float val)
-	{
-	}
-	
-	public void setDiskUtilization(float val)
-	{
-	}
-	
-	public void setMemoryUtilization(float val)
-	{
-	}
+	public float getCpuUtil() {
+        return this.cpuUtil;
+    }
+
+    public void setCpuUtil(float cpuUtil) {
+        updateTimeStamp();
+        this.cpuUtil = cpuUtil;
+    }
+
+    public float getDiskUtil() {
+        return this.diskUtil;
+    }
+
+    public void setDiskUtil(float diskUtil) {
+        updateTimeStamp();
+        this.diskUtil = diskUtil;
+    }
+
+    public float getMemUtil() {
+        return this.memUtil;
+    }
+
+    public void setMemUtil(float memUtil) {
+        updateTimeStamp();
+        this.memUtil = memUtil;
+    }
 	
 	/**
 	 * Returns a string representation of this instance. This will invoke the base class
@@ -72,9 +76,9 @@ public class SystemPerformanceData extends BaseIotData implements Serializable
 		StringBuilder sb = new StringBuilder(super.toString());
 		
 		sb.append(',');
-		sb.append(ConfigConst.CPU_UTIL_PROP).append('=').append(this.getCpuUtilization()).append(',');
-		sb.append(ConfigConst.DISK_UTIL_PROP).append('=').append(this.getDiskUtilization()).append(',');
-		sb.append(ConfigConst.MEM_UTIL_PROP).append('=').append(this.getMemoryUtilization());
+		sb.append(ConfigConst.CPU_UTIL_PROP).append('=').append(this.getCpuUtil()).append(',');
+		sb.append(ConfigConst.DISK_UTIL_PROP).append('=').append(this.getDiskUtil()).append(',');
+		sb.append(ConfigConst.MEM_UTIL_PROP).append('=').append(this.getMemUtil());
 		
 		return sb.toString();
 	}
@@ -87,6 +91,11 @@ public class SystemPerformanceData extends BaseIotData implements Serializable
 	 */
 	protected void handleUpdateData(BaseIotData data)
 	{
+		if (data instanceof SystemPerformanceData) {
+            SystemPerformanceData spData = (SystemPerformanceData) data;
+            this.setCpuUtil(spData.getCpuUtil());
+            this.setDiskUtil(spData.getDiskUtil());
+            this.setMemUtil(spData.getMemUtil());
 	}
-	
+}
 }

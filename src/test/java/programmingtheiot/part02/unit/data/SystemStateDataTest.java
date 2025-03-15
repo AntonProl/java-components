@@ -98,9 +98,9 @@ public class SystemStateDataTest
 		List<SystemPerformanceData> spdList = ssd.getSystemPerformanceDataList();
 		
 		for (SystemPerformanceData spd : spdList) {
-			assertTrue(spd.getCpuUtilization() == DEFAULT_VAL);
-			assertTrue(spd.getDiskUtilization() == DEFAULT_VAL);
-			assertTrue(spd.getMemoryUtilization() == DEFAULT_VAL);
+			assertTrue(spd.getCpuUtil() == DEFAULT_VAL);
+			assertTrue(spd.getDiskUtil() == DEFAULT_VAL);
+			assertTrue(spd.getMemUtil() == DEFAULT_VAL);
 		}
 	}
 	
@@ -129,9 +129,9 @@ public class SystemStateDataTest
 		List<SystemPerformanceData> spdList = ssd.getSystemPerformanceDataList();
 		
 		for (SystemPerformanceData spd : spdList) {
-			assertTrue(spd.getCpuUtilization() == DEFAULT_VAL);
-			assertTrue(spd.getDiskUtilization() == DEFAULT_VAL);
-			assertTrue(spd.getMemoryUtilization() == DEFAULT_VAL);
+			assertTrue(spd.getCpuUtil() == DEFAULT_VAL);
+			assertTrue(spd.getDiskUtil() == DEFAULT_VAL);
+			assertTrue(spd.getMemUtil() == DEFAULT_VAL);
 		}
 	}
 	
@@ -151,9 +151,9 @@ public class SystemStateDataTest
 		ssd.addSensorData(sd);
 		
 		SystemPerformanceData spd = new SystemPerformanceData();
-		spd.setCpuUtilization(DEFAULT_VAL);
-		spd.setDiskUtilization(DEFAULT_VAL);
-		spd.setMemoryUtilization(DEFAULT_VAL);
+		spd.setCpuUtil(DEFAULT_VAL);
+		spd.setDiskUtil(DEFAULT_VAL);
+		spd.setMemUtil(DEFAULT_VAL);
 		ssd.addSystemPerformanceData(spd);
 		
 		return ssd;
