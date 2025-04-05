@@ -163,24 +163,77 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 
 	public boolean isConnected()
 	{
-		return false;
+		// TODO: esta lógica es solo para uso con la instancia síncrona de `MqttClient`
+		return (this.mqttClient != null && this.mqttClient.isConnected());
 	}
 	
 	@Override
 	public boolean publishMessage(ResourceNameEnum topicName, String msg, int qos)
 	{
+		// TODO: determina cuán detallado debe ser tu logging, especialmente si este método se llama con frecuencia
+		if (topicName == null) {
+			_Logger.warning("El recurso es nulo. No se puede publicar el mensaje: " + this.brokerAddr);
+			return false;
+		}
+
+		if (msg == null || msg.length() == 0) {
+			_Logger.warning("El mensaje es nulo o está vacío. No se puede publicar el mensaje: " + this.brokerAddr);
+			return false;
+		}
+
+		if (qos < 0 || qos > 2) {
+			qos = ConfigConst.DEFAULT_QOS;
+		}
+
+		try {
+			byte[] payload = msg.getBytes();
+			MqttMessage mqttMsg = new MqttMessage(payload);
+			mqttMsg.setQos(qos);
+			this.mqttClient.publish(topicName.getResourceName(), mqttMsg);
+			return true;
+		} catch (Exception e) {
+			_Logger.log(Level.SEVERE, "Fallo al publicar mensaje en el tópico: " + topicName, e);
+		}
 		return false;
 	}
 
 	@Override
 	public boolean subscribeToTopic(ResourceNameEnum topicName, int qos)
 	{
+		if (topicName == null) {
+			_Logger.warning("El recurso es nulo. No se puede suscribir al tópico: " + this.brokerAddr);
+			return false;
+		}
+		
+		if (qos < 0 || qos > 2) {
+			qos = ConfigConst.DEFAULT_QOS;
+		}
+		
+		try {
+			this.mqttClient.subscribe(topicName.getResourceName(), qos);
+			_Logger.info("Suscripción exitosa al tópico: " + topicName.getResourceName());
+			return true;
+		} catch (Exception e) {
+			_Logger.log(Level.SEVERE, "Fallo al suscribirse al tópico: " + topicName, e);
+		}
 		return false;
 	}
 
 	@Override
 	public boolean unsubscribeFromTopic(ResourceNameEnum topicName)
 	{
+		if (topicName == null) {
+			_Logger.warning("El recurso es nulo. No se puede desuscribir del tópico: " + this.brokerAddr);
+			return false;
+		}
+		
+		try {
+			this.mqttClient.unsubscribe(topicName.getResourceName());
+			_Logger.info("Desuscripción exitosa del tópico: " + topicName.getResourceName());
+			return true;
+		} catch (Exception e) {
+			_Logger.log(Level.SEVERE, "Fallo al desuscribirse del tópico: " + topicName, e);
+		}
 		return false;
 	}
 
