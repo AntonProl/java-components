@@ -179,6 +179,30 @@ public class DeviceDataManager implements IDataMessageListener
 	
 	public void startManager()
 	{
+		if (this.mqttClient != null) {
+			if (this.mqttClient.connectClient()) {
+				_Logger.info("Cliente MQTT conectado exitosamente al broker.");
+	
+				// agregar suscripciones necesarias
+	
+				// TODO: leer esto del archivo de configuración
+				int qos = ConfigConst.DEFAULT_QOS;
+	
+				// TODO: verificar el valor de retorno de cada uno y tomar acción apropiada
+	
+				// NOTA IMPORTANTE: Las llamadas al método 'subscribeToTopic()' mostradas
+				// abajo se moverán a MqttClientConnector.connectComplete()
+				// en el Módulo de Laboratorio 10. Por ahora, pueden permanecer aquí.
+				this.mqttClient.subscribeToTopic(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE, qos);
+				this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE, qos);
+				this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, qos);
+				this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE, qos);
+			} else {
+				_Logger.severe("No se pudo conectar el cliente MQTT al broker.");
+	
+				// TODO: tomar acción apropiada
+			}
+		}
 		if (this.sysPerfMgr != null) {
 			this.sysPerfMgr.startManager();
 		}
@@ -188,6 +212,29 @@ public class DeviceDataManager implements IDataMessageListener
 	{
 		if (this.sysPerfMgr != null) {
 			this.sysPerfMgr.stopManager();
+		}
+		if (this.mqttClient != null) {
+			// agregar des-suscripciones necesarias
+	
+			// TODO: verificar el valor de retorno de cada uno y tomar acción apropiada
+	
+			// NOTA: Las llamadas a unsubscribeFromTopic() deben coincidir con
+			// las llamadas a subscribeToTopic() de startManager(). Además, la
+			// lógica de des-suscripción puede moverse al método disconnectClient()
+			// de MqttClientConnector ANTES de desconectarse del
+			// broker MQTT.
+			this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.GDA_MGMT_STATUS_MSG_RESOURCE);
+			this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE);
+			this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE);
+			this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE);
+	
+			if (this.mqttClient.disconnectClient()) {
+				_Logger.info("Cliente MQTT desconectado exitosamente del broker.");
+			} else {
+				_Logger.severe("Fallo al desconectar el cliente MQTT del broker.");
+	
+				// TODO: tomar acción apropiada
+			}
 		}
 	}
 
@@ -213,6 +260,10 @@ public class DeviceDataManager implements IDataMessageListener
 
 	if (this.enableMqttClient) {
 		// TODO: implementar esto en el Módulo de Laboratorio 7
+		this.mqttClient = new MqttClientConnector();
+
+		// NOTA: La siguiente línea no es técnicamente necesaria hasta el Módulo de Laboratorio 10
+		this.mqttClient.setDataMessageListener(this);
 	}
 
 	if (this.enableCoapServer) {

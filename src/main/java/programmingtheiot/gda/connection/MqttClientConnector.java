@@ -281,6 +281,21 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 		_Logger.info("Mensaje MQTT recibido en el tema: '" + topic + "'");
 	}
 
+	public boolean pingServer() {
+		try {
+			// Assuming the MQTT client has a ping method
+			if (this.mqttClient.isConnected()) {
+				_Logger.info("MQTT client is connected to the server.");
+				return true;
+			} else {
+				_Logger.warning("MQTT client is not connected to the server.");
+				return false;
+			}
+		} catch (Exception e) {
+			_Logger.warning("Ping to server failed: " + e.getMessage());
+			return false;
+		}
+	}
 	
 	// private methods
 	

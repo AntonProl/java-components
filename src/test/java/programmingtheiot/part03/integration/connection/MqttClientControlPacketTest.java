@@ -56,6 +56,9 @@ public class MqttClientControlPacketTest
 	@After
 	public void tearDown() throws Exception
 	{
+		if (this.mqttClient != null) {
+			this.mqttClient.disconnectClient();
+		}
 	}
 	
 	// test methods
@@ -63,21 +66,37 @@ public class MqttClientControlPacketTest
 	@Test
 	public void testConnectAndDisconnect()
 	{
-		// TODO: implement this test
+		assertTrue(this.mqttClient.connectClient());
+		assertTrue(this.mqttClient.disconnectClient());
 	}
 	
 	@Test
 	public void testServerPing()
 	{
-		// TODO: implement this test
+		assertTrue(this.mqttClient.connectClient());
+		assertTrue(this.mqttClient.pingServer());
+		assertTrue(this.mqttClient.disconnectClient());
 	}
 	
 	@Test
 	public void testPubSub()
 	{
-		// TODO: implement this test
-		// 
-		// IMPORTANT: be sure to use QoS 1 and 2 to see ALL control packets
+		assertTrue(this.mqttClient.connectClient());
+		
+		String topic = ResourceNameEnum.CDA_MGMT_STATUS_MSG_RESOURCE.getResourceName();
+		String message = "Test message";
+		
+		this.mqttClient.subscribeToTopic(ResourceNameEnum.CDA_MGMT_STATUS_MSG_RESOURCE, 1);
+		assertTrue(this.mqttClient.publishMessage(ResourceNameEnum.CDA_MGMT_STATUS_MSG_RESOURCE, message, 1));
+		
+		// Simulate a delay to ensure message delivery
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			_Logger.warning("Sleep interrupted: " + e.getMessage());
+		}
+		
+		this.mqttClient.unsubscribeFromTopic(ResourceNameEnum.CDA_MGMT_STATUS_MSG_RESOURCE);
+		assertTrue(this.mqttClient.disconnectClient());
 	}
-	
 }
