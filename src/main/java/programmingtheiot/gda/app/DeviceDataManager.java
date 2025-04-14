@@ -47,7 +47,7 @@ public class DeviceDataManager implements IDataMessageListener
 	// private var's
 	
 	private boolean enableMqttClient = true;
-	private boolean enableCoapServer = false;
+	private boolean enableCoapServer = true;
 	private boolean enableCloudClient = false;
 	private boolean enableSmtpClient = false;
 	private boolean enablePersistenceClient = false;
@@ -175,6 +175,11 @@ public class DeviceDataManager implements IDataMessageListener
 	
 	public void setActuatorDataListener(String name, IActuatorDataListener listener)
 	{
+		if (listener != null) {
+			// Por ahora, solo ignora 'name'. Si necesitas más de un listener,
+			// puedes usar 'name' para crear un mapa de instancias de listeners.
+			this.actuatorDataListener = listener;
+		}
 	}
 	
 	public void startManager()
@@ -206,6 +211,13 @@ public class DeviceDataManager implements IDataMessageListener
 		if (this.sysPerfMgr != null) {
 			this.sysPerfMgr.startManager();
 		}
+		if (this.enableCoapServer && this.coapServer != null) {
+			if (this.coapServer.startServer()) {
+				_Logger.info("Servidor CoAP iniciado.");
+			} else {
+				_Logger.severe("Error al iniciar el servidor CoAP. Revisa el archivo de registro.");
+			}
+		}
 	}
 	
 	public void stopManager()
@@ -234,6 +246,13 @@ public class DeviceDataManager implements IDataMessageListener
 				_Logger.severe("Fallo al desconectar el cliente MQTT del broker.");
 	
 				// TODO: tomar acción apropiada
+			}
+		}
+		if (this.enableCoapServer && this.coapServer != null) {
+			if (this.coapServer.stopServer()) {
+				_Logger.info("Servidor CoAP detenido.");
+			} else {
+				_Logger.severe("Error al detener el servidor CoAP. Revisa el archivo de registro.");
 			}
 		}
 	}
@@ -268,6 +287,7 @@ public class DeviceDataManager implements IDataMessageListener
 
 	if (this.enableCoapServer) {
 		// TODO: implementar esto en el Módulo de Laboratorio 8
+		this.coapServer = new CoapServerGateway(this);
 	}
 
 	if (this.enableCloudClient) {
@@ -278,5 +298,18 @@ public class DeviceDataManager implements IDataMessageListener
 		// TODO: implementar esto como un ejercicio opcional en el Módulo de Laboratorio 5
 	}
 	}
+
+	private void handleIncomingDataAnalysis(ResourceNameEnum resource, ActuatorData data) {
+		_Logger.info("Analizando datos del actuador entrantes: " + data.getName());
+	
+		if (data.isResponseFlagEnabled()) {
+			// TODO: implementar esto
+		} else {
+			if (this.actuatorDataListener != null) {
+				this.actuatorDataListener.onActuatorDataUpdate(data);
+			}
+		}
+	}	
 	
 }
+
