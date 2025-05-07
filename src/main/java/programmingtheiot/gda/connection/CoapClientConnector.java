@@ -122,4 +122,5 @@ public class CoapClientConnector implements IRequestResponseClient
 	
 	// private methods
 	
+	
 }
