@@ -22,6 +22,7 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 
 import programmingtheiot.common.ConfigConst;
 import programmingtheiot.common.ConfigUtil;
@@ -43,7 +44,8 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	// params
 	private boolean useAsyncClient = false;
 
-	private MqttClient           mqttClient = null;
+	private MqttAsyncClient      mqttClient = null;
+	//private MqttClient           mqttClient = null;
 	private MqttConnectOptions   connOpts = null;
 	private MemoryPersistence    persistence = null;
 	private IDataMessageListener dataMsgListener = null;
@@ -128,26 +130,39 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	
 	// public methods
 	
+
 	@Override
-	public boolean connectClient()
-	{
+	public boolean connectClient() {
 		try {
 			if (this.mqttClient == null) {
-				this.mqttClient = new MqttClient(this.brokerAddr, this.clientID, this.persistence);
+				// NOTA: Cliente MQTT actualizado para usar cliente asíncrono vs cliente
+				// síncrono
+				this.mqttClient = new MqttAsyncClient(this.brokerAddr, this.clientID, this.persistence);
+				// this.mqttClient = new MqttClient(this.brokerAddr, this.clientID,
+				// this.persistence);
+
 				this.mqttClient.setCallback(this);
 			}
-	
-			if (! this.mqttClient.isConnected()) {
-				_Logger.info("MQTT client connecting to broker: " + this.brokerAddr);
+
+			if (!this.mqttClient.isConnected()) {
+				_Logger.info("Cliente MQTT conectándose al broker: " + this.brokerAddr);
+
 				this.mqttClient.connect(this.connOpts);
+
+				// NOTA: Al usar el cliente asíncrono, retornar 'true' aquí no significa
+				// que el cliente esté realmente conectado - todavía. Usa el callback
+				// connectComplete()
+				// para determinar el resultado de connectClient().
 				return true;
 			} else {
-				_Logger.warning("MQTT client already connected to broker: " + this.brokerAddr);
+				_Logger.warning("Cliente MQTT ya conectado al broker: " + this.brokerAddr);
 			}
 		} catch (MqttException e) {
 			// TODO: manejar esta excepción
-			_Logger.log(Level.SEVERE, "Failed to connect MQTT client to broker.", e);
+
+			_Logger.log(Level.SEVERE, "Fallo al conectar el cliente MQTT al broker: " + this.brokerAddr, e);
 		}
+
 		return false;
 	}
 
@@ -270,6 +285,16 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	public void connectComplete(boolean reconnect, String serverURI)
 	{
 		_Logger.info("Conexión MQTT exitosa (es reconexión = " + reconnect + "). Broker: " + serverURI);
+
+		int qos = 1;
+
+		this.subscribeToTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE, qos);
+		this.subscribeToTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, qos);
+		this.subscribeToTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE, qos);
+
+		// NOTA IMPORTANTE: Tendrás que analizar cada tipo de mensaje en el método de
+		// callback
+		// `public void messageArrived(String topic, MqttMessage msg) throws Exception`
 	}
 
 	@Override
