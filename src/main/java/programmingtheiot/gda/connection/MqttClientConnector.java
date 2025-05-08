@@ -8,8 +8,12 @@
 
 package programmingtheiot.gda.connection;
 
+import java.io.File;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.net.ssl.SSLSocketFactory;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
@@ -23,6 +27,7 @@ import programmingtheiot.common.ConfigConst;
 import programmingtheiot.common.ConfigUtil;
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
+import programmingtheiot.common.SimpleCertManagementUtil;
 
 /**
  * Shell representation of class for student implementation.
@@ -50,6 +55,11 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	private int     port = ConfigConst.DEFAULT_MQTT_PORT;
 	private int     brokerKeepAlive = ConfigConst.DEFAULT_KEEP_ALIVE;
 
+	private String pemFileName = null;
+	private boolean enableEncryption = false;
+	private boolean useCleanSession = false;
+	private boolean enableAutoReconnect = true;
+
 	
 	// constructors
 	
@@ -61,6 +71,7 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	{
 		super();
 		ConfigUtil configUtil = ConfigUtil.getInstance();
+		initClientParameters(ConfigConst.MQTT_GATEWAY_SERVICE);
 
 		this.host =
 	    	configUtil.getProperty(
@@ -305,30 +316,146 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	 * @param configSectionName The name of the configuration section to use for
 	 * the MQTT client configuration parameters.
 	 */
-	private void initClientParameters(String configSectionName)
-	{
-		// TODO: implement this
+	private void initClientParameters(String configSectionName) {
+		ConfigUtil configUtil = ConfigUtil.getInstance();
+
+		this.host = configUtil.getProperty(
+				configSectionName, ConfigConst.HOST_KEY, ConfigConst.DEFAULT_HOST);
+		this.port = configUtil.getInteger(
+				configSectionName, ConfigConst.PORT_KEY, ConfigConst.DEFAULT_MQTT_PORT);
+		this.brokerKeepAlive = configUtil.getInteger(
+				configSectionName, ConfigConst.KEEP_ALIVE_KEY, ConfigConst.DEFAULT_KEEP_ALIVE);
+		this.enableEncryption = configUtil.getBoolean(
+				configSectionName, ConfigConst.ENABLE_CRYPT_KEY);
+		this.pemFileName = configUtil.getProperty(
+				configSectionName, ConfigConst.CERT_FILE_KEY);
+
+		// La siguiente propiedad booleana del archivo de configuración es opcional;
+		// puede ser
+		// configurada dentro de las secciones [Mqtt.GatewayService] y
+		// [Cloud.GatewayService]
+		// de PiotConfig.props. Puedes usarla para crear un flujo lógico
+		// dentro de esta clase para determinar si usar MqttClient
+		// o MqttAsyncClient, o simplemente elegir una de las dos clases basada
+		// en tus necesidades de uso. En términos generales, MqttAsyncClient será
+		// necesario cuando se ejecute el GDA como una aplicación, ya que
+		// necesitará manejar mensajes entrantes y salientes usando MQTT
+		// simultáneamente. Para pruebas solo del GDA usando los casos de prueba
+		// especificados en este módulo de laboratorio y otros, generalmente es mejor -
+		// y probablemente requerido - usar MqttClient.
+		//
+		// IMPORTANTE: Si estás usando una versión anterior de ConfigConst.java,
+		// necesitarás añadir la siguiente línea de código a ConfigConst.java:
+		// public static final String USE_ASYNC_CLIENT_KEY = "useAsyncClient";
+		this.useAsyncClient = configUtil.getBoolean(
+				ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.USE_ASYNC_CLIENT_KEY);
+
+		// NOTA: actualizado desde el Módulo de Laboratorio 07 - intenta cargar clientID
+		// desde el archivo de configuración
+		this.clientID = configUtil.getProperty(
+				ConfigConst.GATEWAY_DEVICE, ConfigConst.DEVICE_LOCATION_ID_KEY, MqttClient.generateClientId());
+
+		// estos son específicos de la conexión MQTT que se usará durante la conexión
+		this.persistence = new MemoryPersistence();
+		this.connOpts = new MqttConnectOptions();
+
+		this.connOpts.setKeepAliveInterval(this.brokerKeepAlive);
+		this.connOpts.setCleanSession(this.useCleanSession); // Nota del traductor: Esta variable no se inicializa
+																// explícitamente en el guion, considerar su valor por
+																// defecto o inicialización.
+		this.connOpts.setAutomaticReconnect(this.enableAutoReconnect); // Nota del traductor: Esta variable no se
+																		// inicializa explícitamente en el guion,
+																		// considerar su valor por defecto o
+																		// inicialización.
+
+		// si el cifrado está habilitado, intenta cargar y aplicar el/los certificado(s)
+		if (this.enableEncryption) {
+			initSecureConnectionParameters(configSectionName);
+		}
+
+		// si hay un archivo de credenciales, intenta cargarlas y aplicarlas
+		if (configUtil.hasProperty(configSectionName, ConfigConst.CRED_FILE_KEY)) {
+			initCredentialConnectionParameters(configSectionName);
+		}
+
+		// NOTA: URL no tiene un manejador de protocolo para "tcp" o "ssl",
+		// así que construye la URL manualmente
+		this.brokerAddr = this.protocol + "://" + this.host + ":" + this.port;
+
+		_Logger.info("Usando URL para conexión con el broker: " + this.brokerAddr);
 	}
-	
+
 	/**
 	 * Called by {@link #initClientParameters(String)} to load credentials.
 	 * 
 	 * @param configSectionName The name of the configuration section to use for
-	 * the MQTT client configuration parameters.
+	 *                          the MQTT client configuration parameters.
 	 */
-	private void initCredentialConnectionParameters(String configSectionName)
-	{
-		// TODO: implement this
+
+	private void initCredentialConnectionParameters(String configSectionName) {
+		ConfigUtil configUtil = ConfigUtil.getInstance();
+
+		try {
+			_Logger.info("Verificando si el archivo de credenciales existe y se puede cargar...");
+
+			Properties props = configUtil.getCredentials(configSectionName);
+
+			if (props != null) {
+				this.connOpts.setUserName(props.getProperty(ConfigConst.USER_NAME_TOKEN_KEY, ""));
+				this.connOpts.setPassword(props.getProperty(ConfigConst.USER_AUTH_TOKEN_KEY, "").toCharArray());
+
+				_Logger.info("Credenciales ahora configuradas.");
+			} else {
+				_Logger.warning("No se han configurado credenciales.");
+			}
+		} catch (Exception e) {
+			_Logger.log(Level.WARNING,
+					"Archivo de credenciales no existente. Deshabilitando requisito de autenticación.");
+		}
 	}
-	
+
 	/**
 	 * Called by {@link #initClientParameters(String)} to enable encryption.
 	 * 
 	 * @param configSectionName The name of the configuration section to use for
-	 * the MQTT client configuration parameters.
+	 *                          the MQTT client configuration parameters.
 	 */
-	private void initSecureConnectionParameters(String configSectionName)
-	{
-		// TODO: implement this
+	private void initSecureConnectionParameters(String configSectionName) {
+		ConfigUtil configUtil = ConfigUtil.getInstance();
+
+		try {
+			_Logger.info("Configurando TLS...");
+
+			if (this.pemFileName != null) {
+				File file = new File(this.pemFileName);
+
+				if (file.exists()) {
+					_Logger.info("Archivo PEM válido. Usando conexión segura: " + this.pemFileName);
+				} else {
+					this.enableEncryption = false;
+
+					_Logger.log(Level.WARNING, "Archivo PEM inválido. Usando conexión no segura: " + this.pemFileName,
+							new Exception());
+
+					return;
+				}
+			}
+
+			SSLSocketFactory sslFactory = SimpleCertManagementUtil.getInstance().loadCertificate(this.pemFileName);
+
+			this.connOpts.setSocketFactory(sslFactory);
+
+			// sobrescribir los parámetros de configuración actuales
+			this.port = configUtil.getInteger(
+					configSectionName, ConfigConst.SECURE_PORT_KEY, ConfigConst.DEFAULT_MQTT_SECURE_PORT);
+
+			this.protocol = ConfigConst.DEFAULT_MQTT_SECURE_PROTOCOL;
+
+			_Logger.info("TLS habilitado.");
+		} catch (Exception e) {
+			_Logger.log(Level.SEVERE, "Fallo al inicializar la conexión MQTT segura. Usando conexión no segura.", e);
+
+			this.enableEncryption = false;
+		}
 	}
 }
