@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 import javax.net.ssl.SSLSocketFactory;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
@@ -29,6 +30,10 @@ import programmingtheiot.common.ConfigUtil;
 import programmingtheiot.common.IDataMessageListener;
 import programmingtheiot.common.ResourceNameEnum;
 import programmingtheiot.common.SimpleCertManagementUtil;
+import programmingtheiot.data.ActuatorData;
+import programmingtheiot.data.DataUtil;
+import programmingtheiot.data.SensorData;
+import programmingtheiot.data.SystemPerformanceData;
 
 /**
  * Shell representation of class for student implementation.
@@ -483,4 +488,100 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 			this.enableEncryption = false;
 		}
 	}
+	
+	private class ActuatorResponseMessageListener implements IMqttMessageListener {
+		// ... implementación como en el guion ...
+		private ResourceNameEnum resource = null;
+		private IDataMessageListener dataMsgListener = null;
+
+		ActuatorResponseMessageListener(ResourceNameEnum resource, IDataMessageListener dataMsgListener) {
+			this.resource = resource;
+			this.dataMsgListener = dataMsgListener;
+		}
+
+		@Override
+		public void messageArrived(String topic, MqttMessage message) throws Exception {
+			try {
+				ActuatorData actuatorData = DataUtil.getInstance().jsonToActuatorData(new String(message.getPayload()));
+
+				_Logger.info("Respuesta ActuatorData recibida: " + actuatorData.getValue());
+
+				if (this.dataMsgListener != null) {
+					this.dataMsgListener.handleActuatorCommandResponse(resource, actuatorData);
+				}
+			} catch (Exception e) {
+				_Logger.warning("Fallo al convertir el payload del mensaje a ActuatorData.");
+			}
+		}
+	}
+
+	private class SensorDataMessageListener implements IMqttMessageListener {
+		private ResourceNameEnum resource = null;
+		private IDataMessageListener dataMsgListener = null;
+
+		SensorDataMessageListener(ResourceNameEnum resource, IDataMessageListener dataMsgListener) {
+			this.resource = resource;
+			this.dataMsgListener = dataMsgListener;
+		}
+
+		@Override
+		public void messageArrived(String topic, MqttMessage message) throws Exception {
+			try {
+				// TODO: Extraer el payload y convertir el JSON a SensorData
+				String payload = new String(message.getPayload());
+				SensorData sensorData = DataUtil.getInstance().jsonToSensorData(payload);
+
+				// opcionalmente, registrar un mensaje indicando que se recibieron datos
+				_Logger.info("Mensaje SensorData recibido del tópico: " + topic);
+
+				// TODO: invocar el callback del dataMsgListener para manejar
+				// los mensajes SensorData entrantes
+				if (this.dataMsgListener != null) {
+					this.dataMsgListener.handleSensorMessage(resource, sensorData); // Asumiendo que tu
+																					// IDataMessageListener tiene un
+																					// método así
+				}
+
+			} catch (Exception e) {
+				// TODO: manejar cualquier Exception que pueda ser lanzada
+				_Logger.log(Level.WARNING, "Fallo al procesar mensaje SensorData desde el tópico: " + topic, e);
+			}
+		}
+	}
+
+	private class SystemPerformanceDataMessageListener implements IMqttMessageListener {
+		private ResourceNameEnum resource = null;
+		private IDataMessageListener dataMsgListener = null;
+
+		SystemPerformanceDataMessageListener(ResourceNameEnum resource, IDataMessageListener dataMsgListener) {
+			this.resource = resource;
+			this.dataMsgListener = dataMsgListener;
+		}
+
+		@Override
+		public void messageArrived(String topic, MqttMessage message) throws Exception {
+			try {
+				// TODO: Extraer el payload y convertir el JSON a SystemPerformanceData
+				String payload = new String(message.getPayload());
+				SystemPerformanceData sysPerfData = DataUtil.getInstance().jsonToSystemPerformanceData(payload);
+
+				// opcionalmente, registrar un mensaje indicando que se recibieron datos
+				_Logger.info("Mensaje SystemPerformanceData recibido del tópico: " + topic);
+
+				// TODO: invocar el callback del dataMsgListener para manejar
+				// los mensajes SystemPerformanceData entrantes
+				if (this.dataMsgListener != null) {
+					this.dataMsgListener.handleSystemPerformanceMessage(resource, sysPerfData); // Asumiendo que tu
+																								// IDataMessageListener
+																								// tiene un método así
+				}
+			} catch (Exception e) {
+				// TODO: manejar cualquier Exception que pueda ser lanzada
+				_Logger.log(Level.WARNING, "Fallo al procesar mensaje SystemPerformanceData desde el tópico: " + topic,
+						e);
+			}
+		}
+	}
 }
+
+
