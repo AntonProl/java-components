@@ -80,3 +80,18 @@ enableSystemPerformance = False
 testGdaDataPath         = /tmp/gda-data
 testCdaDataPath         = /tmp/cda-data
 testEmptyApp            = False
+
+# si es true, el GDA procesará los eventos de cambio de humedad del CDA
+handleHumidityChangeOnDevice = True
+
+# segundos mínimos entre lecturas antes de activar el evento de actuación
+humidityMaxTimePastThreshold = 300
+
+# nivel de humedad promedio ideal (% relativo)
+nominalHumiditySetting       = 40.0
+
+# valor mínimo antes de encender el humidificador (% relativo)
+triggerHumidifierFloor       = 30.0
+
+# valor máximo antes de apagar el humidificador (% relativo)
+triggerHumidifierCeiling     = 50.0

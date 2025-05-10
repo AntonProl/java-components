@@ -285,6 +285,21 @@ public class ConfigConst
 	public static final String DATABASE_KEY        = "database";
 	public static final String ENV_DATA_BUCKET_KEY = "envDataBucket";
 	public static final String SYS_DATA_BUCKET_KEY = "sysDataBucket";
+
+	// si es true, el GDA procesará los eventos de cambio de humedad del CDA
+	public static final boolean handleHumidityChangeOnDevice = true;
+
+	// segundos mínimos entre lecturas antes de activar el evento de actuación
+	public static final int humidityMaxTimePastThreshold = 300;
+
+	// nivel de humedad promedio ideal (% relativo)
+	public static final double nominalHumiditySetting = 40.0;
+
+	// valor mínimo antes de encender el humidificador (% relativo)
+	public static final double triggerHumidifierFloor = 30.0;
+
+	// valor máximo antes de apagar el humidificador (% relativo)
+	public static final double triggerHumidifierCeiling = 50.0;
 	
 	// constructors
 	
