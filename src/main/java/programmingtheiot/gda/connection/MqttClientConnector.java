@@ -4,7 +4,7 @@
  * It is provided as a simple shell to guide the student and assist with
  * implementation for the Programming the Internet of Things exercises,
  * and designed to be modified by the student as needed.
- */ 
+ */
 
 package programmingtheiot.gda.connection;
 
@@ -39,102 +39,103 @@ import programmingtheiot.data.SystemPerformanceData;
  * Shell representation of class for student implementation.
  * 
  */
-public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
-{
+public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended {
 	// static
-	
-	private static final Logger _Logger =
-		Logger.getLogger(MqttClientConnector.class.getName());
-	
+
+	private static final Logger _Logger = Logger.getLogger(MqttClientConnector.class.getName());
+
 	// params
 	private boolean useAsyncClient = false;
 
-	private MqttAsyncClient      mqttClient = null;
-	//private MqttClient           mqttClient = null;
-	private MqttConnectOptions   connOpts = null;
-	private MemoryPersistence    persistence = null;
+	private MqttAsyncClient mqttClient = null;
+	// private MqttClient mqttClient = null;
+	private MqttConnectOptions connOpts = null;
+	private MemoryPersistence persistence = null;
 	private IDataMessageListener dataMsgListener = null;
 
-	private String  clientID = null;
-	private String  brokerAddr = null;
-	private String  host = ConfigConst.DEFAULT_HOST;
-	private String  protocol = ConfigConst.DEFAULT_MQTT_PROTOCOL;
-	private int     port = ConfigConst.DEFAULT_MQTT_PORT;
-	private int     brokerKeepAlive = ConfigConst.DEFAULT_KEEP_ALIVE;
+	private String clientID = null;
+	private String brokerAddr = null;
+	private String host = ConfigConst.DEFAULT_HOST;
+	private String protocol = ConfigConst.DEFAULT_MQTT_PROTOCOL;
+	private int port = ConfigConst.DEFAULT_MQTT_PORT;
+	private int brokerKeepAlive = ConfigConst.DEFAULT_KEEP_ALIVE;
 
 	private String pemFileName = null;
 	private boolean enableEncryption = false;
 	private boolean useCleanSession = false;
 	private boolean enableAutoReconnect = true;
+	private IConnectionListener connListener = null;
+	private boolean useCloudGatewayConfig = false;
 
-	
 	// constructors
-	
+
 	/**
 	 * Default.
 	 * 
 	 */
-	public MqttClientConnector()
-	{
+	public MqttClientConnector() {
 		super();
 		ConfigUtil configUtil = ConfigUtil.getInstance();
 		initClientParameters(ConfigConst.MQTT_GATEWAY_SERVICE);
 
-		this.host =
-	    	configUtil.getProperty(
-	        	ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.HOST_KEY, ConfigConst.DEFAULT_HOST);
+		this.host = configUtil.getProperty(
+				ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.HOST_KEY, ConfigConst.DEFAULT_HOST);
 
-		this.port =
-	    	configUtil.getInteger(
-	        	ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.PORT_KEY, ConfigConst.DEFAULT_MQTT_PORT);
+		this.port = configUtil.getInteger(
+				ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.PORT_KEY, ConfigConst.DEFAULT_MQTT_PORT);
 
-		this.brokerKeepAlive =
-	    	configUtil.getInteger(
-	        	ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.KEEP_ALIVE_KEY, ConfigConst.DEFAULT_KEEP_ALIVE);
+		this.brokerKeepAlive = configUtil.getInteger(
+				ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.KEEP_ALIVE_KEY, ConfigConst.DEFAULT_KEEP_ALIVE);
 
-	// Esta siguiente propiedad booleana del archivo de configuración es opcional; puede
-	// establecerse dentro de las secciones [Mqtt.GatewayService] y [Cloud.GatewayService]
-	// de PiotConfig.props. Puedes usarla para crear un flujo lógico dentro de esta clase
-	// para determinar si usar MqttClient o MqttAsyncClient, o simplemente elegir una de
-	// las dos clases según tus necesidades de uso. En general, MqttAsyncClient será
-	// necesario al ejecutar el GDA como una aplicación, ya que necesitará manejar mensajes
-	// entrantes y salientes usando MQTT simultáneamente. Para pruebas solo del GDA usando
-	// los casos de prueba especificados en este módulo de laboratorio y otros, generalmente
-	// es mejor - y probablemente requerido - usar MqttClient.
-	//
-	// IMPORTANTE: Si estás usando una versión antigua de ConfigConst.java,
-	// necesitarás agregar la siguiente línea de código a ConfigConst.java:
-	// public static final String USE_ASYNC_CLIENT_KEY = "useAsyncClient";
-		this.useAsyncClient =
-	    	configUtil.getBoolean(
-	        	ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.USE_ASYNC_CLIENT_KEY);
+		// Esta siguiente propiedad booleana del archivo de configuración es opcional;
+		// puede
+		// establecerse dentro de las secciones [Mqtt.GatewayService] y
+		// [Cloud.GatewayService]
+		// de PiotConfig.props. Puedes usarla para crear un flujo lógico dentro de esta
+		// clase
+		// para determinar si usar MqttClient o MqttAsyncClient, o simplemente elegir
+		// una de
+		// las dos clases según tus necesidades de uso. En general, MqttAsyncClient será
+		// necesario al ejecutar el GDA como una aplicación, ya que necesitará manejar
+		// mensajes
+		// entrantes y salientes usando MQTT simultáneamente. Para pruebas solo del GDA
+		// usando
+		// los casos de prueba especificados en este módulo de laboratorio y otros,
+		// generalmente
+		// es mejor - y probablemente requerido - usar MqttClient.
+		//
+		// IMPORTANTE: Si estás usando una versión antigua de ConfigConst.java,
+		// necesitarás agregar la siguiente línea de código a ConfigConst.java:
+		// public static final String USE_ASYNC_CLIENT_KEY = "useAsyncClient";
+		this.useAsyncClient = configUtil.getBoolean(
+				ConfigConst.MQTT_GATEWAY_SERVICE, ConfigConst.USE_ASYNC_CLIENT_KEY);
 
-	// NOTA: el cliente Java paho requiere un client ID - por ahora,
-	// puedes usar el client ID generado; para ejercicios posteriores,
-	// deberías definir uno propio y cargarlo desde el archivo de configuración
+		// NOTA: el cliente Java paho requiere un client ID - por ahora,
+		// puedes usar el client ID generado; para ejercicios posteriores,
+		// deberías definir uno propio y cargarlo desde el archivo de configuración
 		this.clientID = MqttClient.generateClientId();
 
-	// estos son específicos para la conexión MQTT que se usará durante el connect
+		// estos son específicos para la conexión MQTT que se usará durante el connect
 		this.persistence = new MemoryPersistence();
 		this.connOpts = new MqttConnectOptions();
 
 		this.connOpts.setKeepAliveInterval(this.brokerKeepAlive);
 
-	// NOTA: Si se usa un clientID aleatorio para cada nueva conexión,
-	// la sesión limpia debe estar en 'true'; ver especificación MQTT para más detalles
+		// NOTA: Si se usa un clientID aleatorio para cada nueva conexión,
+		// la sesión limpia debe estar en 'true'; ver especificación MQTT para más
+		// detalles
 		this.connOpts.setCleanSession(false);
 
-	// NOTA: La reconexión automática puede ser una función útil para recuperación de conexión
+		// NOTA: La reconexión automática puede ser una función útil para recuperación
+		// de conexión
 		this.connOpts.setAutomaticReconnect(true);
 
-	// NOTA: La URL no tiene un manejador de protocolo para "tcp",
-	// así que necesitamos construir la URL manualmente
+		// NOTA: La URL no tiene un manejador de protocolo para "tcp",
+		// así que necesitamos construir la URL manualmente
 		this.brokerAddr = this.protocol + "://" + this.host + ":" + this.port;
 	}
-	
-	
+
 	// public methods
-	
 
 	@Override
 	public boolean connectClient() {
@@ -172,9 +173,8 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 	}
 
 	@Override
-	public boolean disconnectClient()
-	{
-		
+	public boolean disconnectClient() {
+
 		try {
 			if (this.mqttClient != null) {
 				if (this.mqttClient.isConnected()) {
@@ -186,139 +186,206 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 				}
 			}
 		} catch (Exception e) {
-		// TODO: manejar esta excepción
+			// TODO: manejar esta excepción
 			_Logger.log(Level.SEVERE, "Failed to disconnect MQTT client from broker: " + this.brokerAddr, e);
-	}
+		}
 		return false;
 	}
 
-	public boolean isConnected()
-	{
+	public boolean isConnected() {
 		// TODO: esta lógica es solo para uso con la instancia síncrona de `MqttClient`
 		return (this.mqttClient != null && this.mqttClient.isConnected());
 	}
-	
+
 	@Override
-	public boolean publishMessage(ResourceNameEnum topicName, String msg, int qos)
-	{
-		// TODO: determina cuán detallado debe ser tu logging, especialmente si este método se llama con frecuencia
+	public boolean publishMessage(ResourceNameEnum topicName, String msg, int qos) {
 		if (topicName == null) {
 			_Logger.warning("El recurso es nulo. No se puede publicar el mensaje: " + this.brokerAddr);
 			return false;
 		}
 
 		if (msg == null || msg.length() == 0) {
-			_Logger.warning("El mensaje es nulo o está vacío. No se puede publicar el mensaje: " + this.brokerAddr);
+			_Logger.warning("El mensaje es nulo o vacío. No se puede publicar el mensaje: " + this.brokerAddr);
+			return false;
+		}
+
+		return publishMessage(topicName.getResourceName(), msg.getBytes(), qos);
+	}
+
+	protected boolean publishMessage(String topicName, byte[] payload, int qos) {
+		if (topicName == null) {
+			_Logger.warning("El recurso es nulo. No se puede publicar el mensaje: " + this.brokerAddr);
+			return false;
+		}
+
+		if (payload == null || payload.length == 0) {
+			_Logger.warning("El mensaje es nulo o vacío. No se puede publicar el mensaje: " + this.brokerAddr);
 			return false;
 		}
 
 		if (qos < 0 || qos > 2) {
+			_Logger.warning("QoS inválido. Usando el predeterminado. QoS solicitado: " + qos);
+			// TODO: recuperar QoS predeterminado del archivo de configuración
 			qos = ConfigConst.DEFAULT_QOS;
 		}
 
 		try {
-			byte[] payload = msg.getBytes();
-			MqttMessage mqttMsg = new MqttMessage(payload);
+			MqttMessage mqttMsg = new MqttMessage();
 			mqttMsg.setQos(qos);
-			this.mqttClient.publish(topicName.getResourceName(), mqttMsg);
+			mqttMsg.setPayload(payload);
+
+			this.mqttClient.publish(topicName, mqttMsg);
 			return true;
 		} catch (Exception e) {
 			_Logger.log(Level.SEVERE, "Fallo al publicar mensaje en el tópico: " + topicName, e);
 		}
+
 		return false;
 	}
 
 	@Override
-	public boolean subscribeToTopic(ResourceNameEnum topicName, int qos)
-	{
+	public boolean subscribeToTopic(ResourceNameEnum topicName, int qos) {
 		if (topicName == null) {
 			_Logger.warning("El recurso es nulo. No se puede suscribir al tópico: " + this.brokerAddr);
 			return false;
 		}
-		
+
+		IMqttMessageListener listener = null;
+		if (topicName == ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE) {
+			listener = new ActuatorResponseMessageListener(topicName, this.dataMsgListener);
+		} else if (topicName == ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE) {
+			listener = new SensorDataMessageListener(topicName, this.dataMsgListener);
+		} else if (topicName == ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE) {
+			listener = new SystemPerformanceDataMessageListener(topicName, this.dataMsgListener);
+		}
+		return subscribeToTopic(topicName.getResourceName(), qos, listener);
+	}
+
+	protected boolean subscribeToTopic(String topicName, int qos, IMqttMessageListener listener) {
+		// NOTA: Este es el método preferido para suscribirse a un tópico dado,
+		// ya que permite definir y registrar un IMqttMessageListener
+		// como el manejador para los mensajes entrantes pertenecientes al
+		// tópico dado 'topicName'.
+
+		if (topicName == null) {
+			_Logger.warning("El recurso es nulo. No se puede suscribir al tópico: " + this.brokerAddr);
+			return false;
+		}
+
 		if (qos < 0 || qos > 2) {
+			_Logger.warning("QoS inválido. Usando el predeterminado. QoS solicitado: " + qos);
+			// TODO: recuperar QoS predeterminado del archivo de configuración
 			qos = ConfigConst.DEFAULT_QOS;
 		}
-		
+
 		try {
-			this.mqttClient.subscribe(topicName.getResourceName(), qos);
-			_Logger.info("Suscripción exitosa al tópico: " + topicName.getResourceName());
+			if (listener != null) {
+				this.mqttClient.subscribe(topicName, qos, listener);
+				_Logger.info("Suscrito exitosamente al tópico con oyente: " + topicName);
+			} else {
+				this.mqttClient.subscribe(topicName, qos);
+				_Logger.info("Suscrito exitosamente al tópico: " + topicName);
+			}
 			return true;
 		} catch (Exception e) {
 			_Logger.log(Level.SEVERE, "Fallo al suscribirse al tópico: " + topicName, e);
 		}
+
 		return false;
 	}
 
 	@Override
-	public boolean unsubscribeFromTopic(ResourceNameEnum topicName)
-	{
+	public boolean unsubscribeFromTopic(ResourceNameEnum topicName) {
 		if (topicName == null) {
-			_Logger.warning("El recurso es nulo. No se puede desuscribir del tópico: " + this.brokerAddr);
+			_Logger.warning("El recurso es nulo. No se puede cancelar la suscripción del tópico: " + this.brokerAddr);
 			return false;
 		}
-		
+
+		return unsubscribeFromTopic(topicName.getResourceName());
+}
+
+	protected boolean unsubscribeFromTopic(String topicName) {
+		if (topicName == null) {
+			_Logger.warning("El recurso es nulo. No se puede cancelar la suscripción del tópico: " + this.brokerAddr);
+			return false;
+		}
+
 		try {
-			this.mqttClient.unsubscribe(topicName.getResourceName());
-			_Logger.info("Desuscripción exitosa del tópico: " + topicName.getResourceName());
+			this.mqttClient.unsubscribe(topicName);
+			_Logger.info("Cancelada exitosamente la suscripción del tópico: " + topicName);
 			return true;
 		} catch (Exception e) {
-			_Logger.log(Level.SEVERE, "Fallo al desuscribirse del tópico: " + topicName, e);
+			_Logger.log(Level.SEVERE, "Fallo al cancelar la suscripción del tópico: " + topicName, e);
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean setConnectionListener(IConnectionListener listener) {
+		if (listener != null) {
+			_Logger.info("Estableciendo oyente de conexión.");
+			this.connListener = listener;
+			return true;
+		} else {
+			_Logger.warning("No se especificó ningún oyente de conexión. Ignorando.");
 		}
 		return false;
 	}
 
 	@Override
-	public boolean setConnectionListener(IConnectionListener listener)
-	{
-		return false;
-	}
-	
-	@Override
-	public boolean setDataMessageListener(IDataMessageListener listener)
-	{
+	public boolean setDataMessageListener(IDataMessageListener listener) {
 		if (listener != null) {
-		this.dataMsgListener = listener;
-		return true;
-	}
+			this.dataMsgListener = listener;
+			return true;
+		}
 		return false;
 	}
-	
+
 	// callbacks
-	
+
 	@Override
-	public void connectComplete(boolean reconnect, String serverURI)
-	{
+	public void connectComplete(boolean reconnect, String serverURI) {
 		_Logger.info("Conexión MQTT exitosa (es reconexión = " + reconnect + "). Broker: " + serverURI);
 
 		int qos = 1;
 
-		this.subscribeToTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE, qos);
-		this.subscribeToTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, qos);
-		this.subscribeToTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE, qos);
+		// Opción 1
+		if (!this.useCloudGatewayConfig) {
+			this.subscribeToTopic(ResourceNameEnum.CDA_ACTUATOR_RESPONSE_RESOURCE, qos);
+			this.subscribeToTopic(ResourceNameEnum.CDA_SENSOR_MSG_RESOURCE, qos);
+			this.subscribeToTopic(ResourceNameEnum.CDA_SYSTEM_PERF_MSG_RESOURCE, qos);
 
-		// NOTA IMPORTANTE: Tendrás que analizar cada tipo de mensaje en el método de
-		// callback
-		// `public void messageArrived(String topic, MqttMessage msg) throws Exception`
+			// NOTA IMPORTANTE: Tendrás que analizar cada tipo de mensaje en el método de
+			// callback
+			// `public void messageArrived(String topic, MqttMessage msg) throws Exception`
+		}
+
+		// Esta llamada permite a MqttClientConnector notificar a otro oyente
+		// sobre que la conexión ahora está completa. Esto será importante para
+		// la implementación de CloudClientConnector, ya que necesita saber cuándo
+		// este cliente finalmente está conectado con el broker MQTT alojado en la nube.
+		if (this.connListener != null) {
+			this.connListener.onConnect();
+		}
 	}
 
 	@Override
-	public void connectionLost(Throwable t)
-	{
+	public void connectionLost(Throwable t) {
 		_Logger.log(Level.WARNING, "Conexión perdida con el broker MQTT: " + this.brokerAddr, t);
 	}
-	
+
 	@Override
-	public void deliveryComplete(IMqttDeliveryToken token)
-	{
-		// TODO: El nivel de logging puede necesitar ser ajustado para ver la salida en el archivo de log / consola
+	public void deliveryComplete(IMqttDeliveryToken token) {
+		// TODO: El nivel de logging puede necesitar ser ajustado para ver la salida en
+		// el archivo de log / consola
 		_Logger.fine("Mensaje MQTT entregado con ID: " + token.getMessageId());
 	}
-	
+
 	@Override
-	public void messageArrived(String topic, MqttMessage msg) throws Exception
-	{
-		// TODO: El nivel de logging puede necesitar ser ajustado para reducir la salida en el archivo de log / consola
+	public void messageArrived(String topic, MqttMessage msg) throws Exception {
+		// TODO: El nivel de logging puede necesitar ser ajustado para reducir la salida
+		// en el archivo de log / consola
 		_Logger.info("Mensaje MQTT recibido en el tema: '" + topic + "'");
 	}
 
@@ -337,14 +404,35 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 			return false;
 		}
 	}
-	
+
+	public MqttClientConnector(boolean useCloudGatewayConfig) {
+		this(useCloudGatewayConfig ? ConfigConst.CLOUD_GATEWAY_SERVICE : null);
+	}
+
+	public MqttClientConnector(String cloudGatewayConfigSectionName) {
+		super();
+
+		if (cloudGatewayConfigSectionName != null && cloudGatewayConfigSectionName.trim().length() > 0) {
+			this.useCloudGatewayConfig = true;
+			initClientParameters(cloudGatewayConfigSectionName);
+		} else {
+			this.useCloudGatewayConfig = false;
+
+			// NOTA: Esta siguiente llamada al método ya debería haber sido creada
+			// en el Módulo de Laboratorio 10. Es simplemente un delegado para manejar el
+			// análisis
+			// de la sección apropiada del archivo de configuración
+			initClientParameters(ConfigConst.MQTT_GATEWAY_SERVICE);
+		}
+	}
 	// private methods
-	
+
 	/**
-	 * Called by the constructor to set the MQTT client parameters to be used for the connection.
+	 * Called by the constructor to set the MQTT client parameters to be used for
+	 * the connection.
 	 * 
 	 * @param configSectionName The name of the configuration section to use for
-	 * the MQTT client configuration parameters.
+	 *                          the MQTT client configuration parameters.
 	 */
 	private void initClientParameters(String configSectionName) {
 		ConfigUtil configUtil = ConfigUtil.getInstance();
@@ -488,7 +576,7 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 			this.enableEncryption = false;
 		}
 	}
-	
+
 	private class ActuatorResponseMessageListener implements IMqttMessageListener {
 		// ... implementación como en el guion ...
 		private ResourceNameEnum resource = null;
@@ -583,5 +671,3 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended
 		}
 	}
 }
-
-
