@@ -193,9 +193,11 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener {
 			_Logger.warning("dataMsgListener es nulo en CloudClientConnector.onConnect(). No se puede pasar al LedEnablementMessageListener.");
 			// Podrías decidir no suscribirte si no hay listener, o manejarlo de otra forma.
 			return;
+		
 		}
 
 		LedEnablementMessageListener ledListener = new LedEnablementMessageListener(this.dataMsgListener);
+		
 		
 		// El tópico al que te suscribes DEBE ser el tópico donde la nube publica los comandos para el LED.
         // Este tópico se define en tu plataforma en la nube (Ubidots).
@@ -350,5 +352,12 @@ public class CloudClientConnector implements ICloudClient, IConnectionListener {
 				_Logger.log(Level.WARNING, "Fallo general al procesar el payload del mensaje del actuador LED: " + jsonData, e);
 			}
 		}
+	}
+
+
+	@Override
+	public boolean sendEdgeDataToCloud(ResourceNameEnum resource, String jsonData, int qos) {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("Unimplemented method 'sendEdgeDataToCloud'");
 	}
 }
