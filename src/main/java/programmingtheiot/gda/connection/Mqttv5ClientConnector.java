@@ -179,4 +179,11 @@ public class Mqttv5ClientConnector implements IPubSubClient, MqttCallback
 		// TODO: implement this
 	}
 
+
+	@Override
+	public boolean sendEdgeDataToCloud(ResourceNameEnum resource, String jsonData, int qos) {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("Unimplemented method 'sendEdgeDataToCloud'");
+	}
+
 }

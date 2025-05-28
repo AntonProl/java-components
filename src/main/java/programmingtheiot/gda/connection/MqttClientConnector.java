@@ -44,6 +44,12 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended 
 
 	private static final Logger _Logger = Logger.getLogger(MqttClientConnector.class.getName());
 
+	@Override
+	public boolean sendEdgeDataToCloud(ResourceNameEnum topicName, String msg, int qos) {
+		// This method delegates to publishMessage, which handles publishing to MQTT
+		return publishMessage(topicName, msg, qos);
+	}
+
 	// params
 	private boolean useAsyncClient = false;
 
@@ -66,6 +72,7 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended 
 	private boolean enableAutoReconnect = true;
 	private IConnectionListener connListener = null;
 	private boolean useCloudGatewayConfig = false;
+	
 
 	// constructors
 

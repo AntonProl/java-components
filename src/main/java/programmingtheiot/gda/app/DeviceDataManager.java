@@ -200,15 +200,43 @@ public class DeviceDataManager implements IDataMessageListener
 	}
 
 	@Override
-	public boolean handleIncomingMessage(ResourceNameEnum resourceName, String msg)
-	{
-		if (msg != null) {
-		_Logger.info("Handling incoming generic message: " + msg);
+public boolean handleIncomingMessage(ResourceNameEnum resourceName, String msg)
+{
+	if (resourceName != null && msg != null) {
+		try {
+			if (resourceName == ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE) {
+				_Logger.info("Manejando mensaje ActuatorData entrante: " + msg);
 
-		return true;
+				// NOTA: puede parecer un desperdicio convertir a ActuatorData y viceversa mientras
+				// los datos JSON ya están disponibles; sin embargo, esto proporciona un esquema de
+				// validación para asegurar que los datos son realmente una instancia 'ActuatorData'
+				// antes de enviarlos al CDA
+				ActuatorData ad = DataUtil.getInstance().jsonToActuatorData(msg);
+				String jsonData = DataUtil.getInstance().actuatorDataToJson(ad);
+
+				if (this.mqttClient != null) {
+					// TODO: recuperar el nivel de QoS del archivo de configuración
+					_Logger.fine("Publicando datos al broker MQTT: " + jsonData);
+					return this.mqttClient.publishMessage(resourceName, jsonData, 0);
+				}
+
+				// TODO: Si el GDA está alojando un servidor CoAP (o un cliente CoAP que
+				// se conectará al servidor CoAP del CDA), puedes añadir esa lógica aquí
+				// en lugar del cliente MQTT o además
+
+			} else {
+				_Logger.warning("Fallo al analizar mensaje entrante. Tipo desconocido: " + msg);
+
+				return false;
+			}
+		} catch (Exception e) {
+			_Logger.log(Level.WARNING, "Fallo al procesar mensaje entrante para el recurso: " + resourceName, e);
+		}
 	} else {
-		return false;
+		_Logger.warning("Mensaje entrante no tiene datos. Ignorando para el recurso: " + resourceName);
 	}
+
+	return false;
 }
 	
 

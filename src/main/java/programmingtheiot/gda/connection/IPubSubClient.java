@@ -85,5 +85,7 @@ public interface IPubSubClient
 	 * @return bool True on success (if listener is non-null will always be the case), False otherwise.
 	 */
 	public boolean setConnectionListener(IConnectionListener listener);
+
+    public boolean sendEdgeDataToCloud(ResourceNameEnum resource, String jsonData, int qos);
 	
 }
