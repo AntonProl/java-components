@@ -35,6 +35,7 @@ import programmingtheiot.gda.connection.MqttClientConnector;
 import programmingtheiot.gda.connection.RedisPersistenceAdapter;
 import programmingtheiot.gda.connection.SmtpClientConnector;
 import programmingtheiot.gda.system.SystemPerformanceManager;
+import programmingtheiot.gda.connection.ICloudClient;
 
 /**
  * Shell representation of class for student implementation.
@@ -170,7 +171,32 @@ public class DeviceDataManager implements IDataMessageListener
 	@Override
 	public boolean handleActuatorCommandRequest(ResourceNameEnum resourceName, ActuatorData data)
 	{
+		if (data != null) {
+		// NOTA: Siéntete libre de actualizar este mensaje de registro para depuración y monitoreo
+		_Logger.log(
+			Level.FINE,
+			"Solicitud de actuador recibida: {0}. Mensaje: {1}",
+			new Object[] {resourceName.getResourceName(), Integer.valueOf((data.getCommand()))});
+
+		if (data.hasError()) {
+			_Logger.warning("Indicador de error activado para la instancia de ActuatorData.");
+		}
+
+		// TODO: recuperar esto del archivo de configuración
+		int qos = ConfigConst.DEFAULT_QOS;
+
+		// TODO: quizás quieras implementar alguna lógica de análisis aquí o
+		// en un método separado para determinar la mejor manera de manejar
+		// ActuatorData entrante antes de llamar a this.sendActuatorCommandtoCda()
+
+		// Recuerda que este método privado se implementó en el Módulo de Laboratorio 10
+		// Consulta PIOT-GDA-10-003 para más detalles
+		this.sendActuatorCommandtoCda(resourceName, data);
+
+		return true;
+	} else {
 		return false;
+	}
 	}
 
 	@Override
@@ -203,6 +229,8 @@ public boolean handleSensorMessage(ResourceNameEnum resourceName, SensorData dat
 		// TODO: recuperar esto del archivo de configuración
 		int qos = ConfigConst.DEFAULT_QOS;
 
+		// NOTA: Tu código puede no tener una referencia persistenceClient o
+		// un booleano enablePersistenceClient
 		if (this.enablePersistenceClient && this.persistenceClient != null) {
 			this.persistenceClient.storeData(resourceName.getResourceName(), qos, data);
 		}
@@ -216,21 +244,31 @@ public boolean handleSensorMessage(ResourceNameEnum resourceName, SensorData dat
 		return false;
 	}
 }
-
+	
 	@Override
 	public boolean handleSystemPerformanceMessage(ResourceNameEnum resourceName, SystemPerformanceData data)
 	{
 		if (data != null) {
-			_Logger.info("Handling system performance message: " + data.getName());
-	
-			if (data.hasError()) {
-				_Logger.warning("Error flag set for SystemPerformanceData instance.");
-			}
-	
-			return true;
-		} else {
-			return false;
+		_Logger.info("Manejando mensaje de rendimiento del sistema: " + data.getName());
+
+		if (data.hasError()) {
+			_Logger.warning("Indicador de error activado para la instancia de SystemPerformanceData.");
 		}
+
+		// TODO: recuperar esto del archivo de configuración
+		int qos = ConfigConst.DEFAULT_QOS;
+
+		// NOTA: Quizás quieras persistir tu SystemPerformanceData aquí
+
+		// NOTA: Quizás también quieras analizar el SystemPerformanceData aquí
+
+		String jsonData = DataUtil.getInstance().systemPerformanceDataToJson(data);
+		this.handleUpstreamTransmission(resourceName, jsonData, qos);
+
+		return true;
+	} else {
+		return false;
+	}
 	}
 	
 	public void setActuatorDataListener(String name, IActuatorDataListener listener)
@@ -372,8 +410,18 @@ public boolean handleSensorMessage(ResourceNameEnum resourceName, SensorData dat
 	}
 
 	private void handleUpstreamTransmission(ResourceNameEnum resource, String jsonData, int qos) {
-		// NOTA: Esto se implementará en la Parte 04
-		_Logger.info("TODO: Enviar datos JSON al servicio en la nube: " + resource);
+		_Logger.fine("Enviando datos JSON al servicio en la nube: " + resource);
+
+		if (this.enableCloudClient && this.cloudClient != null) {
+			boolean success = this.cloudClient.sendEdgeDataToCloud(resource, jsonData, qos);
+			if (success) {
+				_Logger.fine("Datos JSON enviados ascendentemente a CSP.");
+			} else {
+				_Logger.warning("Fallo al enviar datos JSON al servicio en la nube.");
+			}
+		} else {
+			_Logger.fine("CloudClient no está habilitado o no está inicializado. No se envían datos ascendentemente.");
+		}
 	}
 
 	private void handleIncomingDataAnalysis(ResourceNameEnum resource, SensorData data) {
