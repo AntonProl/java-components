@@ -44,11 +44,11 @@ certFile       = ./cert/PiotMqttLocalCertFile.pem
 host           = localhost
 port           = 1883
 securePort     = 8883
-defaultQoS     = 0
+defaultQoS     = 2
 keepAlive      = 60
 enableAuth     = False
-enableCrypt    = False
-useAsyncClient = False
+enableCrypt    = True
+useAsyncClient = True
 
 #
 # CoAP client and server configuration information

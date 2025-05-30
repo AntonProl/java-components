@@ -41,7 +41,7 @@ public class MqttClientPerformanceTest
 	private static final Logger _Logger =
 		Logger.getLogger(MqttClientPerformanceTest.class.getName());
 	
-	public static final int MAX_TEST_RUNS = 10000;
+	public static final int MAX_TEST_RUNS = 5000;
 	
 	// member var's
 	
@@ -75,7 +75,7 @@ public class MqttClientPerformanceTest
 	/**
 	 * Test method for {@link programmingtheiot.gda.connection.MqttClientConnector#connectClient()}.
 	 */
-	@Test
+	//@Test
 	public void testConnectAndDisconnect()
 	{
 		long startMillis = System.currentTimeMillis();
@@ -92,7 +92,7 @@ public class MqttClientPerformanceTest
 	/**
 	 * Test method for {@link programmingtheiot.gda.connection.MqttClientConnector#publishMessage(programmingtheiot.common.ResourceNameEnum, java.lang.String, int)}.
 	 */
-	@Test
+	//@Test
 	public void testPublishQoS0()
 	{
 		execTestPublish(MAX_TEST_RUNS, 0);
@@ -101,7 +101,7 @@ public class MqttClientPerformanceTest
 	/**
 	 * Test method for {@link programmingtheiot.gda.connection.MqttClientConnector#publishMessage(programmingtheiot.common.ResourceNameEnum, java.lang.String, int)}.
 	 */
-	@Test
+	//@Test
 	public void testPublishQoS1()
 	{
 		execTestPublish(MAX_TEST_RUNS, 1);

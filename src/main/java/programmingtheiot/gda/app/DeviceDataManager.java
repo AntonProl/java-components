@@ -337,6 +337,9 @@ public class DeviceDataManager implements IDataMessageListener
 		if (data.getTypeID() == ConfigConst.HUMIDITY_SENSOR_TYPE) {
 			handleHumiditySensorAnalysis(resource, data);
 		}
+		if (data.getTypeID() == ConfigConst.AIR_QUALITY_SENSOR_TYPE) {
+			handleAirQualitySensorAnalysis(resource, data);
+		}
 	}
 
 	private void handleHumiditySensorAnalysis(ResourceNameEnum resource, SensorData data) {
@@ -428,5 +431,22 @@ public class DeviceDataManager implements IDataMessageListener
 			odt = OffsetDateTime.now();
 		}
 		return odt;
+	}
+
+
+	private void handleAirQualitySensorAnalysis(ResourceNameEnum resource, SensorData data) {
+		_Logger.info(
+				"Analizando datos del Sensor de Calidad del Aire: ID=" + data.getName() + " Valor=" + data.getValue());
+		// Implementa tu lógica de análisis aquí:
+		// - ¿Cruza algún umbral?
+		// - ¿Necesita almacenarse? (ya se hace en handleSensorMessage)
+		// - ¿Necesita activar alguna acción en el GDA o enviar un comando a otro
+		// actuador?
+		if (data.getValue() > 200) { // Ejemplo de umbral
+			_Logger.warning("¡ALERTA: Calidad del aire MALA! Valor: " + data.getValue());
+			// Podrías, por ejemplo, enviar un comando para encender un purificador de aire
+			// (otro actuador)
+			// o enviar una notificación por correo.
+		}
 	}
 }

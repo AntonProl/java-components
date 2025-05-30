@@ -160,13 +160,15 @@ public class MqttClientConnector implements IPubSubClient, MqttCallbackExtended 
 			if (!this.mqttClient.isConnected()) {
 				_Logger.info("Cliente MQTT conectándose al broker: " + this.brokerAddr);
 
-				this.mqttClient.connect(this.connOpts);
+				this.mqttClient.connect(this.connOpts).waitForCompletion();
 
-				// NOTA: Al usar el cliente asíncrono, retornar 'true' aquí no significa
-				// que el cliente esté realmente conectado - todavía. Usa el callback
-				// connectComplete()
-				// para determinar el resultado de connectClient().
-				return true;
+				// Espera a que la conexión esté realmente establecida antes de retornar true
+				if (this.mqttClient.isConnected()) {
+					return true;
+				} else {
+					_Logger.warning("No se pudo conectar el cliente MQTT al broker: " + this.brokerAddr);
+					return false;
+				}
 			} else {
 				_Logger.warning("Cliente MQTT ya conectado al broker: " + this.brokerAddr);
 			}
