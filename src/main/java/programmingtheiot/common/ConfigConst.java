@@ -123,6 +123,7 @@ public class ConfigConst
 	public static final int    ENV_DEVICE_TYPE           = 1000;
 	public static final int    HVAC_ACTUATOR_TYPE        = 1001;
 	public static final int    HUMIDIFIER_ACTUATOR_TYPE  = 1002;
+	public static final int    AIR_PURIFIER_ACTUATOR_TYPE = 1003;
 	
 	public static final int    HUMIDITY_SENSOR_TYPE      = 1010;
 	public static final int    PRESSURE_SENSOR_TYPE      = 1012;
@@ -149,6 +150,8 @@ public class ConfigConst
 	public static final String LED_ACTUATOR_NAME        = "LedActuator";
 	public static final String HUMIDIFIER_ACTUATOR_NAME = "HumidifierActuator";
 	public static final String HVAC_ACTUATOR_NAME       = "HvacActuator";
+	public static final String AIR_PURIFIER_ACTUATOR_NAME = "AirPurifier";
+
 
 	// this is included here for testing purposes only
 	public static final String TEMP_SENSOR_NAME = "TempSensor";

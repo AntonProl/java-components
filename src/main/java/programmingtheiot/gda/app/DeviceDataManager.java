@@ -62,6 +62,12 @@ public class DeviceDataManager implements IDataMessageListener
 	private float triggerHumidifierFloor = 30.0f;
 	private float triggerHumidifierCeiling = 50.0f;
 
+	// Variables de instancia para la lógica del purificador (si son necesarias para
+	// estado o temporización)
+	private boolean airPurifierIsOn = false; // Para saber el estado actual asumido
+	private OffsetDateTime lastAirQualityBadTimestamp = null;
+	private long airQualityActionThresholdMillis = 30000; // Ej: actuar si la calidad es mala por 30 seg
+
 	public DeviceDataManager()
 	{
 		super();
@@ -448,5 +454,28 @@ public class DeviceDataManager implements IDataMessageListener
 			// (otro actuador)
 			// o enviar una notificación por correo.
 		}
+	}
+
+	
+
+	private void sendAirPurifierCommand(int command, float triggerValue) {
+		ActuatorData airPurifierCmd = new ActuatorData();
+		airPurifierCmd.setName(ConfigConst.AIR_PURIFIER_ACTUATOR_NAME);
+
+		// Obtener el ID del CDA al que enviar el comando. Podría ser una config o
+		// derivado.
+		String cdaID = ConfigUtil.getInstance().getProperty(
+				ConfigConst.CONSTRAINED_DEVICE, ConfigConst.DEVICE_LOCATION_ID_KEY, "constraineddevice001");
+		airPurifierCmd.setLocationID(cdaID);
+
+		airPurifierCmd.setTypeID(ConfigConst.AIR_PURIFIER_ACTUATOR_TYPE);
+		airPurifierCmd.setCommand(command);
+		airPurifierCmd.setValue(triggerValue); // Opcional: enviar el valor que disparó el comando
+
+		String action = (command == ConfigConst.ON_COMMAND) ? "ENCENDIDO" : "APAGADO";
+		airPurifierCmd.setStateData("Purificador de Aire puesto a " + action + " debido a ICA=" + triggerValue);
+
+		_Logger.info("Enviando comando al CDA para el Purificador de Aire: " + action);
+		sendActuatorCommandtoCda(ResourceNameEnum.CDA_ACTUATOR_CMD_RESOURCE, airPurifierCmd);
 	}
 }
